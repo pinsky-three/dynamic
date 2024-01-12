@@ -50,7 +50,7 @@ fn main() -> Result<()> {
 
         // let hsv_color = Scalar::new(0.0, 1.0, 1.0, 1.0);
 
-        let (r, g, b) = hsv_to_rgb(720. * frame_counter / total_frames, 1., 1.);
+        let (r, g, b) = hsv_to_rgb(745. * frame_counter / total_frames, 1., 1.);
 
         // let mut scalar_color = Scalar::default();
         // imgproc::cvt_color(&hsv_color, &mut scalar_color, imgproc::COLOR_HSV2BGR, 0)?;
