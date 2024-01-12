@@ -26,11 +26,9 @@ fn main() -> Result<()> {
         panic!("Unable to open default camera!");
     }
 
-    let total_frames = video.get(CAP_PROP_FRAME_COUNT)?;
+    // let total_frames = video.get(CAP_PROP_FRAME_COUNT)?;
 
-    // create a palette from red to blue with the length of the video
-    // let mut palette = Vec::with_capacity(total_frames as usize);
-    let mut frame_counter = 0.;
+    // let mut frame_counter = 0.;
 
     let mut frames = Vec::new();
 
@@ -39,31 +37,52 @@ fn main() -> Result<()> {
 
         video.read(&mut frame)?;
 
-        println!("frame: {} | {}", frame_counter, total_frames);
+        // println!("frame: {} | {}", frame_counter, total_frames);
 
-        // convert frame into a grayscale image
-        let mut gray = Mat::default();
-        imgproc::cvt_color(&frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0)?;
+        // // convert frame into a grayscale image
+        // let mut gray = Mat::default();
+        // imgproc::cvt_color(&frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0)?;
 
-        let mut next_pos = Mat::default();
-        imgproc::cvt_color(&gray, &mut next_pos, imgproc::COLOR_GRAY2BGR, 0)?;
+        // let mut next_pos = Mat::default();
+        // imgproc::cvt_color(&gray, &mut next_pos, imgproc::COLOR_GRAY2BGR, 0)?;
 
-        // let hsv_color = Scalar::new(0.0, 1.0, 1.0, 1.0);
+        // let (r, g, b) = hsv_to_rgb(745. * frame_counter / total_frames, 1., 1.);
 
-        let (r, g, b) = hsv_to_rgb(745. * frame_counter / total_frames, 1., 1.);
+        // let scalar_color = Scalar::new(b as f64 / 255.0, g as f64 / 255.0, r as f64 / 255.0, 1.0);
 
-        // let mut scalar_color = Scalar::default();
-        // imgproc::cvt_color(&hsv_color, &mut scalar_color, imgproc::COLOR_HSV2BGR, 0)?;
+        // next_pos = next_pos.mul(&scalar_color, 1.0)?.to_mat()?;
 
-        // tint all the image with only red color
-        // let mut red = Mat::default();
-        let scalar_color = Scalar::new(b as f64 / 255.0, g as f64 / 255.0, r as f64 / 255.0, 1.0);
-
-        next_pos = next_pos.mul(&scalar_color, 1.0)?.to_mat()?;
-
-        frames.push(next_pos);
-        frame_counter += 1.;
+        frames.push(frame);
+        // frame_counter += 1.;
     }
+
+    let total_frames = frames.len() as f64;
+
+    frames = frames
+        .iter()
+        .enumerate()
+        .map(|(i, frame)| {
+            let mut gray = Mat::default();
+            imgproc::cvt_color(&frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0).unwrap();
+
+            let mut post_processed_frame = Mat::default();
+            imgproc::cvt_color(&gray, &mut post_processed_frame, imgproc::COLOR_GRAY2BGR, 0)
+                .unwrap();
+
+            let (r, g, b) = hsv_to_rgb(360. * i as f64 / total_frames, 1., 1.);
+
+            let scalar_color =
+                Scalar::new(b as f64 / 255.0, g as f64 / 255.0, r as f64 / 255.0, 1.0);
+
+            post_processed_frame = post_processed_frame
+                .mul(&scalar_color, 1.0)
+                .unwrap()
+                .to_mat()
+                .unwrap();
+
+            post_processed_frame
+        })
+        .collect();
 
     let mut sum = Mat::default();
 
@@ -74,7 +93,7 @@ fn main() -> Result<()> {
             frames[i - 1].clone() // 0
         };
 
-        add_weighted(&src_1, 0.95, &frames[i], 0.05, 0.0, &mut sum, -1)?;
+        add_weighted(&src_1, 0.99, &frames[i], 0.1, 0.0, &mut sum, -1)?;
 
         let img_name = format!("frames/frame_{}.jpg", i);
         imwrite(img_name.as_str(), &frames[i - 1], &Vector::new())?;
@@ -87,7 +106,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-pub fn hsv_to_rgb(hue: f64, saturation: f64, value: f64) -> (u8, u8, u8) {
+fn hsv_to_rgb(hue: f64, saturation: f64, value: f64) -> (u8, u8, u8) {
     fn is_between(value: f64, min: f64, max: f64) -> bool {
         min <= value && value < max
     }
