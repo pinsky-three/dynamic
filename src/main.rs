@@ -1,7 +1,8 @@
+use opencv::core::Scalar;
 use std::ops::Add;
 
 use opencv::{
-    core::{add_weighted, Vector},
+    core::{add_weighted, ElemMul, Vector},
     highgui::{self, imshow},
     imgcodecs::imwrite,
     imgproc,
@@ -45,11 +46,17 @@ fn main() -> Result<()> {
         let mut gray = Mat::default();
         imgproc::cvt_color(&frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0)?;
 
-        // tint the image red
-        let mut red = Mat::default();
-        imgproc::cvt_color(&gray, &mut red, imgproc::COLOR_GRAY2BGR, 0)?;
+        // convert grayscale image into a colorized image
+        let mut colorized = Mat::default();
 
-        frames.push(red);
+        imgproc::apply_color_map(
+            &gray,
+            &mut colorized,
+            imgproc::COLORMAP_PARULA,
+            // imgproc::COLORMAP_AUTUMN,
+        )?;
+
+        frames.push(colorized);
     }
 
     let mut sum = Mat::default();
@@ -58,7 +65,7 @@ fn main() -> Result<()> {
         let src_1 = if i > 1 {
             sum.clone()
         } else {
-            frames[i - 1].clone()
+            frames[i - 1].clone() // 0
         };
 
         add_weighted(&src_1, 0.95, &frames[i], 0.05, 0.0, &mut sum, -1)?;
