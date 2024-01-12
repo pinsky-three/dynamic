@@ -1,13 +1,12 @@
-use opencv::core::{Scalar, Vec3f, VecN};
-use std::ops::Add;
+use opencv::core::Scalar;
 
 use opencv::{
-    core::{add_weighted, ElemMul, Vector},
-    highgui::{self, imshow},
+    core::{add_weighted, Vector},
+    highgui::{self},
     imgcodecs::imwrite,
     imgproc,
     prelude::*,
-    videoio::{self, CAP_PROP_FRAME_COUNT, CAP_PROP_POS_FRAMES},
+    videoio::{self},
     Result,
 };
 
@@ -26,10 +25,6 @@ fn main() -> Result<()> {
         panic!("Unable to open default camera!");
     }
 
-    // let total_frames = video.get(CAP_PROP_FRAME_COUNT)?;
-
-    // let mut frame_counter = 0.;
-
     let mut frames = Vec::new();
 
     while video.grab()? {
@@ -37,23 +32,7 @@ fn main() -> Result<()> {
 
         video.read(&mut frame)?;
 
-        // println!("frame: {} | {}", frame_counter, total_frames);
-
-        // // convert frame into a grayscale image
-        // let mut gray = Mat::default();
-        // imgproc::cvt_color(&frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0)?;
-
-        // let mut next_pos = Mat::default();
-        // imgproc::cvt_color(&gray, &mut next_pos, imgproc::COLOR_GRAY2BGR, 0)?;
-
-        // let (r, g, b) = hsv_to_rgb(745. * frame_counter / total_frames, 1., 1.);
-
-        // let scalar_color = Scalar::new(b as f64 / 255.0, g as f64 / 255.0, r as f64 / 255.0, 1.0);
-
-        // next_pos = next_pos.mul(&scalar_color, 1.0)?.to_mat()?;
-
         frames.push(frame);
-        // frame_counter += 1.;
     }
 
     let total_frames = frames.len() as f64;
@@ -62,14 +41,16 @@ fn main() -> Result<()> {
         .iter()
         .enumerate()
         .map(|(i, frame)| {
-            let mut gray = Mat::default();
-            imgproc::cvt_color(&frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0).unwrap();
+            // let mut gray = Mat::default();
+            // imgproc::cvt_color(&frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0).unwrap();
 
-            let mut post_processed_frame = Mat::default();
-            imgproc::cvt_color(&gray, &mut post_processed_frame, imgproc::COLOR_GRAY2BGR, 0)
-                .unwrap();
+            // let mut post_processed_frame = Mat::default();
+            // imgproc::cvt_color(&gray, &mut post_processed_frame, imgproc::COLOR_GRAY2BGR, 0)
+            //     .unwrap();
 
-            let (r, g, b) = hsv_to_rgb(360. * i as f64 / total_frames, 1., 1.);
+            let mut post_processed_frame = frame.clone();
+
+            let (r, g, b) = hsv_to_rgb(360. * i as f64 / total_frames, 1.0, 1.0);
 
             let scalar_color =
                 Scalar::new(b as f64 / 255.0, g as f64 / 255.0, r as f64 / 255.0, 1.0);
@@ -86,11 +67,13 @@ fn main() -> Result<()> {
 
     let mut sum = Mat::default();
 
+    sum.set_scalar(Scalar::new(1.0, 1.0, 1.0, 1.0))?;
+
     for i in 1..frames.len() {
         let src_1 = if i > 1 {
             sum.clone()
         } else {
-            frames[i - 1].clone() // 0
+            frames[i - 1].clone()
         };
 
         add_weighted(&src_1, 0.99, &frames[i], 0.05, 0.0, &mut sum, -1)?;
@@ -100,8 +83,6 @@ fn main() -> Result<()> {
     }
 
     imwrite("sum.jpg", &sum, &Vector::new())?;
-    // highgui::imshow(window, &sum)?;
-    // highgui::wait_key(0)?;
 
     Ok(())
 }
