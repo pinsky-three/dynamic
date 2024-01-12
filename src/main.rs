@@ -1,4 +1,9 @@
-use opencv::{highgui, imgproc, prelude::*, videoio, Result};
+use opencv::{
+    highgui, imgproc,
+    prelude::*,
+    videoio::{self, CAP_PROP_FRAME_COUNT, CAP_PROP_POS_FRAMES},
+    Result,
+};
 
 fn main() -> Result<()> {
     let window = "video capture";
@@ -15,16 +20,23 @@ fn main() -> Result<()> {
         panic!("Unable to open default camera!");
     }
 
+    let mut frame_counter = 0;
+
     loop {
         let mut frame = Mat::default();
         video.read(&mut frame)?;
+        frame_counter += 1;
 
         if frame.size()?.width > 0 {
             let mut gray = Mat::default();
             imgproc::cvt_color(&frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0)?;
             highgui::imshow(window, &gray)?;
-        } else {
-            video.open_file("minimal_horse.mp4", videoio::CAP_FFMPEG)?;
+        }
+
+        if frame_counter == video.get(CAP_PROP_FRAME_COUNT)? as i32 {
+            frame_counter = 0;
+
+            video.set(CAP_PROP_POS_FRAMES, 0.0)?;
         }
 
         if highgui::wait_key(10)? > 0 {
