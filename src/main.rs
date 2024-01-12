@@ -1,4 +1,4 @@
-use opencv::core::Scalar;
+use opencv::core::{Scalar, Vec3f, VecN};
 use std::ops::Add;
 
 use opencv::{
@@ -26,10 +26,11 @@ fn main() -> Result<()> {
         panic!("Unable to open default camera!");
     }
 
-    // let total_frames = video.get(CAP_PROP_FRAME_COUNT)? as i32;
+    let total_frames = video.get(CAP_PROP_FRAME_COUNT)?;
 
     // create a palette from red to blue with the length of the video
     // let mut palette = Vec::with_capacity(total_frames as usize);
+    let mut frame_counter = 0.;
 
     let mut frames = Vec::new();
 
@@ -38,25 +39,30 @@ fn main() -> Result<()> {
 
         video.read(&mut frame)?;
 
-        // frame_counter += 1;
-
-        // println!("frame: {}", frame_counter);
+        println!("frame: {} | {}", frame_counter, total_frames);
 
         // convert frame into a grayscale image
         let mut gray = Mat::default();
         imgproc::cvt_color(&frame, &mut gray, imgproc::COLOR_BGR2GRAY, 0)?;
 
-        // convert grayscale image into a colorized image
-        let mut colorized = Mat::default();
+        let mut next_pos = Mat::default();
+        imgproc::cvt_color(&gray, &mut next_pos, imgproc::COLOR_GRAY2BGR, 0)?;
 
-        imgproc::apply_color_map(
-            &gray,
-            &mut colorized,
-            imgproc::COLORMAP_PARULA,
-            // imgproc::COLORMAP_AUTUMN,
-        )?;
+        // let hsv_color = Scalar::new(0.0, 1.0, 1.0, 1.0);
 
-        frames.push(colorized);
+        let (r, g, b) = hsv_to_rgb(720. * frame_counter / total_frames, 1., 1.);
+
+        // let mut scalar_color = Scalar::default();
+        // imgproc::cvt_color(&hsv_color, &mut scalar_color, imgproc::COLOR_HSV2BGR, 0)?;
+
+        // tint all the image with only red color
+        // let mut red = Mat::default();
+        let scalar_color = Scalar::new(b as f64 / 255.0, g as f64 / 255.0, r as f64 / 255.0, 1.0);
+
+        next_pos = next_pos.mul(&scalar_color, 1.0)?.to_mat()?;
+
+        frames.push(next_pos);
+        frame_counter += 1.;
     }
 
     let mut sum = Mat::default();
@@ -69,6 +75,9 @@ fn main() -> Result<()> {
         };
 
         add_weighted(&src_1, 0.95, &frames[i], 0.05, 0.0, &mut sum, -1)?;
+
+        let img_name = format!("frames/frame_{}.jpg", i);
+        imwrite(img_name.as_str(), &frames[i - 1], &Vector::new())?;
     }
 
     imwrite("sum.jpg", &sum, &Vector::new())?;
@@ -76,4 +85,56 @@ fn main() -> Result<()> {
     // highgui::wait_key(0)?;
 
     Ok(())
+}
+
+pub fn hsv_to_rgb(hue: f64, saturation: f64, value: f64) -> (u8, u8, u8) {
+    fn is_between(value: f64, min: f64, max: f64) -> bool {
+        min <= value && value < max
+    }
+
+    check_bounds(hue, saturation, value);
+
+    let c = value * saturation;
+    let h = hue / 60.0;
+    let x = c * (1.0 - ((h % 2.0) - 1.0).abs());
+    let m = value - c;
+
+    let (r, g, b): (f64, f64, f64) = if is_between(h, 0.0, 1.0) {
+        (c, x, 0.0)
+    } else if is_between(h, 1.0, 2.0) {
+        (x, c, 0.0)
+    } else if is_between(h, 2.0, 3.0) {
+        (0.0, c, x)
+    } else if is_between(h, 3.0, 4.0) {
+        (0.0, x, c)
+    } else if is_between(h, 4.0, 5.0) {
+        (x, 0.0, c)
+    } else {
+        (c, 0.0, x)
+    };
+
+    (
+        ((r + m) * 255.0) as u8,
+        ((g + m) * 255.0) as u8,
+        ((b + m) * 255.0) as u8,
+    )
+}
+
+fn check_bounds(hue: f64, saturation: f64, value: f64) {
+    fn panic_bad_params(name: &str, from_value: &str, to_value: &str, supplied: f64) -> ! {
+        panic!(
+            "param {} must be between {} and {} inclusive; was: {}",
+            name, from_value, to_value, supplied
+        )
+    }
+
+    println!("hue: {}", hue);
+
+    if !(0.0..=360.0).contains(&hue) {
+        panic_bad_params("hue", "0.0", "360.0", hue)
+    } else if !(0.0..=1.0).contains(&saturation) {
+        panic_bad_params("saturation", "0.0", "1.0", saturation)
+    } else if !(0.0..=1.0).contains(&value) {
+        panic_bad_params("value", "0.0", "1.0", value)
+    }
 }
