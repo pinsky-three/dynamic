@@ -18,7 +18,7 @@ fn main() -> Result<()> {
 
     let mut video = videoio::VideoCapture::new(0, videoio::CAP_FFMPEG)?; // 0 is the default camera
 
-    video.open_file("minimal_horse.mp4", videoio::CAP_FFMPEG)?; // 0 is the default camera
+    video.open_file("lumiere_3.mp4", videoio::CAP_FFMPEG)?; // 0 is the default camera
 
     let opened = videoio::VideoCapture::is_opened(&video)?;
 
@@ -93,7 +93,7 @@ fn main() -> Result<()> {
             frames[i - 1].clone() // 0
         };
 
-        add_weighted(&src_1, 0.99, &frames[i], 0.1, 0.0, &mut sum, -1)?;
+        add_weighted(&src_1, 0.99, &frames[i], 0.05, 0.0, &mut sum, -1)?;
 
         let img_name = format!("frames/frame_{}.jpg", i);
         imwrite(img_name.as_str(), &frames[i - 1], &Vector::new())?;
@@ -147,7 +147,7 @@ fn check_bounds(hue: f64, saturation: f64, value: f64) {
         )
     }
 
-    println!("hue: {}", hue);
+    // println!("hue: {}", hue);
 
     if !(0.0..=360.0).contains(&hue) {
         panic_bad_params("hue", "0.0", "360.0", hue)
