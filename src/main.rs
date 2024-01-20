@@ -9,12 +9,9 @@ fn main() -> Result<(), ()> {
         ..Default::default()
     };
     eframe::run_native(
-        "My egui App",
+        "Dynamic Extrusion",
         options,
         Box::new(|cc| {
-            // This gives us image support:
-            // egui_extras::install_image_loaders(&cc.egui_ctx);
-
             install_image_loaders(&cc.egui_ctx);
             Box::<MyApp>::default()
         }),
@@ -25,16 +22,14 @@ fn main() -> Result<(), ()> {
 }
 
 struct MyApp {
-    name: String,
-    age: u32,
+    ratio: u32,
     sum_filepath: String,
 }
 
 impl Default for MyApp {
     fn default() -> Self {
         Self {
-            name: "Arthur".to_owned(),
-            age: 900,
+            ratio: 990,
             sum_filepath: "file://sum.png".to_string(),
         }
     }
@@ -43,27 +38,33 @@ impl Default for MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("My egui Application");
-            ui.horizontal(|ui| {
-                let name_label = ui.label("Your name: ");
-                ui.text_edit_singleline(&mut self.name)
-                    .labelled_by(name_label.id);
-            });
-            ui.add(egui::Slider::new(&mut self.age, 0..=1000).text("age"));
-            if ui.button("Click each year").clicked() {
-                self.age += 1;
+            println!("Hello World!");
 
-                let alpha: f64 = self.age as f64 / 1000.;
+            ui.heading("Dynamic");
+            // ui.horizontal(|ui| {
+            //     let name_label = ui.label("Your name: ");
+            //     ui.text_edit_singleline(&mut self.name)
+            //         .labelled_by(name_label.id);
+            // });
+            ui.add(egui::Slider::new(&mut self.ratio, 0..=1000).text("ratio"));
+            if ui.button("Calculate").clicked() {
+                let alpha: f64 = self.ratio as f64 / 1000.;
 
                 process_video("minimal_horse.mp4".to_string(), alpha, 1. - alpha).unwrap();
+                println!("processed video");
             }
-            ui.label(format!("Hello '{}', age {}", self.name, self.age));
+            ui.label(format!(
+                "alpha: {:.3}, beta: {:.3}",
+                self.ratio as f64 / 1000.,
+                1. - (self.ratio as f64 / 1000.)
+            ));
 
             // ui.image(egui::include_image!(
             //     "../../../crates/egui/assets/ferris.png"
             // ));
 
-            ui.image(&self.sum_filepath);
+            // ui.image(&self.sum_filepath);
+            ui.add(egui::Image::from_uri(&self.sum_filepath).shrink_to_fit());
         });
     }
 }

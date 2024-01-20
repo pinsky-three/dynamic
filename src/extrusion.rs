@@ -4,7 +4,7 @@ use opencv::{
     core::{add_weighted, Mat, Scalar, Vector},
     hub_prelude::{MatExprTraitConst, MatTrait, MatTraitConst},
     imgcodecs::imwrite,
-    videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst},
+    videoio::{VideoCapture, VideoCaptureTrait, VideoCaptureTraitConst, CAP_FFMPEG},
 };
 
 pub fn process_video(video_path: String, alpha: f64, beta: f64) -> Result<(), Box<dyn Error>> {
@@ -35,11 +35,11 @@ pub fn process_video(video_path: String, alpha: f64, beta: f64) -> Result<(), Bo
 }
 
 fn embedded_video_frames(_video_path: String) -> Result<Vec<Mat>, Box<dyn Error>> {
-    let mut video = videoio::VideoCapture::new(0, videoio::CAP_FFMPEG)?; // 0 is the default camera
+    let mut video = VideoCapture::new(0, CAP_FFMPEG)?;
 
-    video.open_file("minimal_horse.mp4", videoio::CAP_FFMPEG)?; // 0 is the default camera
+    video.open_file("minimal_horse.mp4", CAP_FFMPEG)?;
 
-    let opened = videoio::VideoCapture::is_opened(&video)?;
+    let opened = VideoCapture::is_opened(&video)?;
 
     if !opened {
         panic!("Unable to open default camera!");
