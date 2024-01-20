@@ -1,12 +1,40 @@
 use std::error::Error;
 
 use opencv::{
-    core::{Mat, Scalar},
-    hub_prelude::{MatExprTraitConst, MatTraitConst},
+    core::{add_weighted, Mat, Scalar, Vector},
+    hub_prelude::{MatExprTraitConst, MatTrait, MatTraitConst},
+    imgcodecs::imwrite,
     videoio::{self, VideoCaptureTrait, VideoCaptureTraitConst},
 };
 
-fn embedded_video_frames(video_path: String) -> Result<Vec<Mat>, Box<dyn Error>> {
+pub fn process_video(video_path: String, alpha: f64, beta: f64) -> Result<(), Box<dyn Error>> {
+    let frames = embedded_video_frames(video_path)?;
+
+    let mut sum = Mat::default();
+
+    sum.set_scalar(Scalar::new(1.0, 1.0, 1.0, 1.0))?;
+
+    for i in 1..frames.len() {
+        let src_1 = if i > 1 {
+            sum.clone()
+        } else {
+            frames[i - 1].clone()
+        };
+
+        //0.99 | 0.05
+
+        add_weighted(&src_1, alpha, &frames[i], beta, 0.0, &mut sum, -1)?;
+
+        let img_name = format!("frames/frame_{}.jpg", i);
+        imwrite(img_name.as_str(), &frames[i - 1], &Vector::new())?;
+    }
+
+    imwrite("sum.png", &sum, &Vector::new())?;
+
+    Ok(())
+}
+
+fn embedded_video_frames(_video_path: String) -> Result<Vec<Mat>, Box<dyn Error>> {
     let mut video = videoio::VideoCapture::new(0, videoio::CAP_FFMPEG)?; // 0 is the default camera
 
     video.open_file("minimal_horse.mp4", videoio::CAP_FFMPEG)?; // 0 is the default camera
