@@ -6,5 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+eframe = "0.25.0"
 ffmpeg-next = "6.1.1"
-opencv = { version = "0.88.7", features = ["clang-runtime"] }
+opencv = { version = "0.88.8", features = ["clang-runtime"] }
+
+egui_extras = { version = "0.25.0", features = ["all_loaders"] }
+image = { version = "0.24.8", features = ["jpeg", "png"] }

@@ -1,8 +1,9 @@
+use egui_extras::install_image_loaders;
 use opencv::core::Scalar;
 
 use opencv::{
     core::{add_weighted, Vector},
-    highgui::{self},
+    // highgui::{self},
     imgcodecs::imwrite,
     imgproc,
     prelude::*,
@@ -10,14 +11,16 @@ use opencv::{
     Result,
 };
 
-fn main() -> Result<()> {
-    let window = "video capture";
+use eframe::egui;
 
-    highgui::named_window(window, 1)?;
+fn main() -> Result<()> {
+    // let window = "video capture";
+
+    // highgui::named_window(window, 1)?;
 
     let mut video = videoio::VideoCapture::new(0, videoio::CAP_FFMPEG)?; // 0 is the default camera
 
-    video.open_file("lumiere_3.mp4", videoio::CAP_FFMPEG)?; // 0 is the default camera
+    video.open_file("minimal_horse.mp4", videoio::CAP_FFMPEG)?; // 0 is the default camera
 
     let opened = videoio::VideoCapture::is_opened(&video)?;
 
@@ -82,7 +85,24 @@ fn main() -> Result<()> {
         imwrite(img_name.as_str(), &frames[i - 1], &Vector::new())?;
     }
 
-    imwrite("sum.jpg", &sum, &Vector::new())?;
+    imwrite("sum.png", &sum, &Vector::new())?;
+
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_inner_size([600.0, 600.0]),
+        ..Default::default()
+    };
+    eframe::run_native(
+        "My egui App",
+        options,
+        Box::new(|cc| {
+            // This gives us image support:
+            // egui_extras::install_image_loaders(&cc.egui_ctx);
+
+            install_image_loaders(&cc.egui_ctx);
+            Box::<MyApp>::default()
+        }),
+    )
+    .unwrap();
 
     Ok(())
 }
@@ -136,5 +156,43 @@ fn check_bounds(hue: f64, saturation: f64, value: f64) {
         panic_bad_params("saturation", "0.0", "1.0", saturation)
     } else if !(0.0..=1.0).contains(&value) {
         panic_bad_params("value", "0.0", "1.0", value)
+    }
+}
+
+struct MyApp {
+    name: String,
+    age: u32,
+}
+
+impl Default for MyApp {
+    fn default() -> Self {
+        Self {
+            name: "Arthur".to_owned(),
+            age: 42,
+        }
+    }
+}
+
+impl eframe::App for MyApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("My egui Application");
+            ui.horizontal(|ui| {
+                let name_label = ui.label("Your name: ");
+                ui.text_edit_singleline(&mut self.name)
+                    .labelled_by(name_label.id);
+            });
+            ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
+            if ui.button("Click each year").clicked() {
+                self.age += 1;
+            }
+            ui.label(format!("Hello '{}', age {}", self.name, self.age));
+
+            // ui.image(egui::include_image!(
+            //     "../../../crates/egui/assets/ferris.png"
+            // ));
+
+            ui.image("file://sum.png");
+        });
     }
 }
